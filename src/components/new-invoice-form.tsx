@@ -19,7 +19,7 @@ export function NewInvoiceForm() {
   const [success, setSuccess] = useState(false)
   
   const [formData, setFormData] = useState({
-    value: "",
+    value: "", // valor bruto, só números
     description: "",
     cardNumber: "",
     expiryDate: "",
@@ -31,31 +31,36 @@ export function NewInvoiceForm() {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
-  const formatCurrency = (value: string) => {
-    const numericValue = value.replace(/\\D/g, "")
-    const formattedValue = (Number.parseInt(numericValue) / 100).toLocaleString("pt-BR", {
+  // Exibe valor formatado para moeda
+  const displayCurrency = (value: string) => {
+    if (!value) return "R$ 0,00"
+    const numericValue = value.replace(/\D/g, "")
+    const amount = Number.parseInt(numericValue) / 100
+    if (isNaN(amount)) return "R$ 0,00"
+    return amount.toLocaleString("pt-BR", {
       style: "currency",
       currency: "BRL",
     })
-    return formattedValue
   }
 
   const formatCardNumber = (value: string) => {
-    const numericValue = value.replace(/\\D/g, "")
-    return numericValue.replace(/(\\d{4})(?=\\d)/g, "$1 ")
+    const numericValue = value.replace(/\D/g, "")
+    return numericValue.replace(/(.{4})/g, "$1 ").trim()
   }
 
   const formatExpiryDate = (value: string) => {
-    const numericValue = value.replace(/\\D/g, "")
-    if (numericValue.length >= 2) {
-      return numericValue.substring(0, 2) + "/" + numericValue.substring(2, 4)
-    }
-    return numericValue
+    // Permite digitar livremente, aplica máscara apenas se possível
+    let numericValue = value.replace(/\D/g, "")
+    if (numericValue.length === 0) return ""
+    if (numericValue.length <= 2) return numericValue
+    if (numericValue.length <= 4) return numericValue.substring(0,2) + "/" + numericValue.substring(2,4)
+    return numericValue.substring(0,2) + "/" + numericValue.substring(2,4)
   }
 
   const calculateSubtotal = () => {
-    const numericValue = formData.value.replace(/\\D/g, "")
-    return Number.parseInt(numericValue) / 100 || 0
+    const numericValue = formData.value.replace(/\D/g, "")
+    const amount = Number.parseInt(numericValue) / 100
+    return isNaN(amount) ? 0 : amount
   }
 
   const calculateProcessingFee = () => {
@@ -146,11 +151,16 @@ export function NewInvoiceForm() {
               <Input
                 type="text"
                 value={formData.value}
-                onChange={(e) => handleInputChange("value", formatCurrency(e.target.value))}
+                onChange={(e) => {
+                  // Aceita apenas números
+                  const raw = e.target.value.replace(/\D/g, "")
+                  handleInputChange("value", raw)
+                }}
                 className="bg-slate-700 border-slate-600 text-white text-lg"
                 placeholder="R$ 0,00"
                 disabled={isLoading}
               />
+              <div className="text-gray-400 text-xs mt-1">{displayCurrency(formData.value)}</div>
             </div>
 
             <div className="space-y-2">
@@ -194,7 +204,20 @@ export function NewInvoiceForm() {
                 <Input
                   type="text"
                   value={formData.expiryDate}
-                  onChange={(e) => handleInputChange("expiryDate", formatExpiryDate(e.target.value))}
+                  onChange={(e) => {
+                    // Permite digitar livremente, aplica máscara sem impedir
+                    let val = e.target.value
+                    // Permite apenas números e barra
+                    val = val.replace(/[^\d/]/g, "")
+                    // Aplica máscara se necessário
+                    if (val.length === 2 && !val.includes("/")) {
+                      val = val + "/"
+                    }
+                    if (val.length > 5) {
+                      val = val.substring(0,5)
+                    }
+                    handleInputChange("expiryDate", val)
+                  }}
                   className="bg-slate-600 border-slate-500 text-white font-mono"
                   placeholder="MM/AA"
                   maxLength={5}
