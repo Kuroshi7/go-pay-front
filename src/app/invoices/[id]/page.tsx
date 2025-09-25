@@ -1,9 +1,16 @@
+"use client"
+
 import { InvoiceDetails } from "@/components/invoice-details"
 import { PageHeader } from "@/components/page-header"
 import { ArrowLeft, Download } from "lucide-react"
 import Link from "next/link"
 
 export default function InvoiceDetailsPage({ params }: { params: { id: string } }) {
+  const handleDownload = () => {
+    // TODO: Implementar download do PDF da fatura
+    console.log(`Download da fatura #INV-${params.id}`)
+  }
+
   return (
     <div className="min-h-screen bg-slate-900">
       <PageHeader />
@@ -22,7 +29,10 @@ export default function InvoiceDetailsPage({ params }: { params: { id: string } 
                   <span className="bg-green-600 text-white px-3 py-1 rounded-full text-sm">Aprovado</span>
                 </div>
               </div>
-              <button className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-md flex items-center gap-2">
+              <button 
+                className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors"
+                onClick={handleDownload}
+              >
                 <Download className="w-4 h-4" />
                 Download PDF
               </button>

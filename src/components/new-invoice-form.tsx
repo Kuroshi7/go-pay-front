@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -10,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { CreditCard } from "lucide-react"
 
 export function NewInvoiceForm() {
+  const router = useRouter()
   const [formData, setFormData] = useState({
     value: "",
     description: "",
@@ -58,9 +60,16 @@ export function NewInvoiceForm() {
     return calculateSubtotal() + calculateProcessingFee()
   }
 
+  const handleCancel = () => {
+    router.push('/invoices')
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     console.log("Form submitted:", formData)
+    // TODO: Implementar integração com API
+    // Após sucesso, redirecionar para lista de faturas
+    // router.push('/invoices')
   }
 
   return (
@@ -181,6 +190,7 @@ export function NewInvoiceForm() {
           type="button"
           variant="outline"
           className="border-slate-600 text-gray-300 hover:bg-slate-700 bg-transparent"
+          onClick={handleCancel}
         >
           Cancelar
         </Button>

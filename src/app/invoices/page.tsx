@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { InvoicesTable } from "@/components/invoices-table"
 import { InvoicesFilters } from "@/components/invoices-filters"
 import { PageHeader } from "@/components/page-header"
@@ -15,12 +16,15 @@ export default function InvoicesPage() {
                 <h1 className="text-white text-2xl font-semibold mb-2">Faturas</h1>
                 <p className="text-gray-400">Gerencie suas faturas e acompanhe os pagamentos</p>
               </div>
-              <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md flex items-center gap-2">
+              <Link 
+                href="/invoices/new"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md flex items-center gap-2 transition-colors"
+              >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
                 Nova Fatura
-              </button>
+              </Link>
             </div>
 
             <InvoicesFilters />

@@ -1,5 +1,7 @@
 "use client"
 
+import { useState } from "react"
+import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Eye, Download } from "lucide-react"
@@ -35,6 +37,14 @@ const statusConfig = {
 }
 
 export function InvoicesTable() {
+  const [currentPage, setCurrentPage] = useState(1)
+  const totalPages = 3
+
+  const handleDownload = (invoiceId: string) => {
+    // TODO: Implementar download da fatura
+    console.log(`Download da fatura ${invoiceId}`)
+  }
+
   return (
     <div className="space-y-4">
       <div className="overflow-x-auto">
@@ -63,10 +73,17 @@ export function InvoicesTable() {
                 </td>
                 <td className="py-4 px-4">
                   <div className="flex items-center gap-2">
-                    <Button size="sm" variant="ghost" className="text-blue-400 hover:text-blue-300">
-                      <Eye className="w-4 h-4" />
-                    </Button>
-                    <Button size="sm" variant="ghost" className="text-gray-400 hover:text-gray-300">
+                    <Link href={`/invoices/${invoice.id.replace('#INV-', '')}`}>
+                      <Button size="sm" variant="ghost" className="text-blue-400 hover:text-blue-300">
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                    </Link>
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      className="text-gray-400 hover:text-gray-300"
+                      onClick={() => handleDownload(invoice.id)}
+                    >
                       <Download className="w-4 h-4" />
                     </Button>
                   </div>
@@ -80,21 +97,34 @@ export function InvoicesTable() {
       <div className="flex items-center justify-between pt-4">
         <p className="text-gray-400 text-sm">Mostrando 1 - 3 de 50 resultados</p>
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="ghost" className="text-gray-400">
+          <Button 
+            size="sm" 
+            variant="ghost" 
+            className="text-gray-400"
+            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+            disabled={currentPage === 1}
+          >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </Button>
-          <Button size="sm" className="bg-indigo-600 text-white">
-            1
-          </Button>
-          <Button size="sm" variant="ghost" className="text-gray-400">
-            2
-          </Button>
-          <Button size="sm" variant="ghost" className="text-gray-400">
-            3
-          </Button>
-          <Button size="sm" variant="ghost" className="text-gray-400">
+          {[1, 2, 3].map((page) => (
+            <Button 
+              key={page}
+              size="sm" 
+              className={currentPage === page ? "bg-indigo-600 text-white" : "bg-transparent text-gray-400 hover:bg-slate-700"}
+              onClick={() => setCurrentPage(page)}
+            >
+              {page}
+            </Button>
+          ))}
+          <Button 
+            size="sm" 
+            variant="ghost" 
+            className="text-gray-400"
+            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+            disabled={currentPage === totalPages}
+          >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
