@@ -1,34 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
+import { useAuth } from "@/contexts/AuthContext"
+import { apiService } from "@/services/api"
+import { Invoice } from "@/types/api"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Eye, Download } from "lucide-react"
-
-const invoices = [
-  {
-    id: "#INV-001",
-    date: "30/03/2025",
-    description: "Compra Online #123",
-    value: "R$ 1.500,00",
-    status: "approved",
-  },
-  {
-    id: "#INV-002",
-    date: "29/03/2025",
-    description: "Serviço Premium",
-    value: "R$ 15.000,00",
-    status: "pending",
-  },
-  {
-    id: "#INV-003",
-    date: "28/03/2025",
-    description: "Assinatura Mensal",
-    value: "R$ 99,90",
-    status: "rejected",
-  },
-]
+import { Eye, Download, Loader2 } from "lucide-react"
 
 const statusConfig = {
   approved: { label: "Aprovado", className: "bg-green-600 text-white" },
@@ -37,12 +16,91 @@ const statusConfig = {
 }
 
 export function InvoicesTable() {
+  const { apiKey } = useAuth()
+  const [invoices, setInvoices] = useState<Invoice[]>([])
   const [currentPage, setCurrentPage] = useState(1)
-  const totalPages = 3
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState("")
+  const itemsPerPage = 10
+  const totalPages = Math.ceil(invoices.length / itemsPerPage)
+
+  useEffect(() => {
+    const loadInvoices = async () => {
+      if (!apiKey) return
+      
+      setIsLoading(true)
+      setError("")
+      
+      try {
+        const data = await apiService.getInvoices(apiKey)
+        setInvoices(data)
+      } catch (error) {
+        console.error("Erro ao carregar faturas:", error)
+        setError("Erro ao carregar faturas")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadInvoices()
+  }, [apiKey])
 
   const handleDownload = (invoiceId: string) => {
     // TODO: Implementar download da fatura
     console.log(`Download da fatura ${invoiceId}`)
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit', 
+      year: 'numeric'
+    })
+  }
+
+  const formatCurrency = (amount: number) => {
+    return amount.toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    })
+  }
+
+  // Pagination
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const currentInvoices = invoices.slice(startIndex, endIndex)
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="flex items-center gap-2 text-white">
+          <Loader2 className="w-5 h-5 animate-spin" />
+          <span>Carregando faturas...</span>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-900/20 border border-red-800 rounded-lg p-4 text-center">
+        <p className="text-red-400">{error}</p>
+      </div>
+    )
+  }
+
+  if (invoices.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-400 mb-4">Nenhuma fatura encontrada</p>
+        <Link 
+          href="/invoices/new"
+          className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md inline-block"
+        >
+          Criar primeira fatura
+        </Link>
+      </div>
+    )
   }
 
   return (
@@ -60,20 +118,20 @@ export function InvoicesTable() {
             </tr>
           </thead>
           <tbody>
-            {invoices.map((invoice) => (
+            {currentInvoices.map((invoice) => (
               <tr key={invoice.id} className="border-b border-slate-700/50">
                 <td className="text-white py-4 px-4 font-mono">{invoice.id}</td>
-                <td className="text-white py-4 px-4">{invoice.date}</td>
+                <td className="text-white py-4 px-4">{formatDate(invoice.created_at)}</td>
                 <td className="text-white py-4 px-4">{invoice.description}</td>
-                <td className="text-white py-4 px-4 font-semibold">{invoice.value}</td>
+                <td className="text-white py-4 px-4 font-semibold">{formatCurrency(invoice.amount)}</td>
                 <td className="py-4 px-4">
-                  <Badge className={statusConfig[invoice.status as keyof typeof statusConfig].className}>
-                    {statusConfig[invoice.status as keyof typeof statusConfig].label}
+                  <Badge className={statusConfig[invoice.status].className}>
+                    {statusConfig[invoice.status].label}
                   </Badge>
                 </td>
                 <td className="py-4 px-4">
                   <div className="flex items-center gap-2">
-                    <Link href={`/invoices/${invoice.id.replace('#INV-', '')}`}>
+                    <Link href={`/invoices/${invoice.id}`}>
                       <Button size="sm" variant="ghost" className="text-blue-400 hover:text-blue-300">
                         <Eye className="w-4 h-4" />
                       </Button>
@@ -95,7 +153,9 @@ export function InvoicesTable() {
       </div>
 
       <div className="flex items-center justify-between pt-4">
-        <p className="text-gray-400 text-sm">Mostrando 1 - 3 de 50 resultados</p>
+        <p className="text-gray-400 text-sm">
+          Mostrando {startIndex + 1} - {Math.min(endIndex, invoices.length)} de {invoices.length} resultados
+        </p>
         <div className="flex items-center gap-2">
           <Button 
             size="sm" 
@@ -108,16 +168,19 @@ export function InvoicesTable() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </Button>
-          {[1, 2, 3].map((page) => (
-            <Button 
-              key={page}
-              size="sm" 
-              className={currentPage === page ? "bg-indigo-600 text-white" : "bg-transparent text-gray-400 hover:bg-slate-700"}
-              onClick={() => setCurrentPage(page)}
-            >
-              {page}
-            </Button>
-          ))}
+          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+            const pageNumber = i + 1
+            return (
+              <Button 
+                key={pageNumber}
+                size="sm" 
+                className={currentPage === pageNumber ? "bg-indigo-600 text-white" : "bg-transparent text-gray-400 hover:bg-slate-700"}
+                onClick={() => setCurrentPage(pageNumber)}
+              >
+                {pageNumber}
+              </Button>
+            )
+          })}
           <Button 
             size="sm" 
             variant="ghost" 
